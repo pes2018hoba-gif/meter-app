@@ -1,0 +1,20 @@
+{
+  "name": "متابعة قراءات العدادات",
+  "short_name": "العدادات",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f6fa",
+  "theme_color": "#075985",
+  "description": "تسجيل قراءات العدادات ومتابعة الاستهلاك",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#075985"><meta name="description" content="تطبيق مستقل لتسجيل قراءات العدادات من الهاتف">
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>متابعة قراءات العدادات</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:#172033;background:#f2f6fa}
+*{box-sizing:border-box}body{margin:0;padding:0 0 env(safe-area-inset-bottom)}header{background:#075985;color:white;padding:22px 18px 18px;border-radius:0 0 22px 22px}
+header h1{font-size:21px;margin:0 0 6px}header p{margin:0;font-size:13px;opacity:.9}
+main{max-width:760px;margin:auto;padding:14px}.tabs{display:flex;gap:7px;overflow:auto;margin:4px 0 14px}.tab{border:0;border-radius:12px;padding:11px 14px;background:#e1eaf2;color:#16415c;font-weight:700;white-space:nowrap}.tab.active{background:#075985;color:white}
+.panel{display:none}.panel.active{display:block}.card{background:white;border:1px solid #e1e8ef;border-radius:17px;padding:15px;margin-bottom:12px;box-shadow:0 3px 12px #18334a0a}
+h2{font-size:17px;margin:0 0 12px}h3{font-size:15px;margin:0 0 8px}.muted{color:#64748b;font-size:12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.field{margin-bottom:12px}label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}input,select{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;background:white;font:inherit;font-size:16px;color:#172033}
+button,.btn{border:0;border-radius:12px;padding:12px 14px;background:#075985;color:white;font:inherit;font-weight:700;cursor:pointer;text-align:center}.secondary{background:#e6eef5;color:#16415c}.danger{background:#fee2e2;color:#991b1b}.success{background:#0f766e}.wide{width:100%}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions>*{flex:1}.meter{border:1px solid #e3eaf0;border-radius:14px;padding:12px;margin:10px 0}.meter-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.meter input{margin-bottom:8px}.preview{width:100%;max-height:220px;object-fit:contain;border-radius:10px;background:#f1f5f9;margin:8px 0}.pill{font-size:11px;padding:4px 8px;border-radius:30px;background:#e0f2fe;color:#075985}.reading{display:flex;justify-content:space-between;border-bottom:1px solid #edf1f5;padding:9px 0;font-size:14px}.reading:last-child{border:0}.empty{text-align:center;color:#64748b;padding:24px 10px}.small{font-size:12px}.notice{padding:10px;border-radius:10px;background:#fff7ed;color:#9a3412;font-size:12px;line-height:1.7;margin:10px 0}.ok{background:#ecfdf5;color:#166534}.hidden{display:none!important}
+@media(max-width:430px){.grid{grid-template-columns:1fr 1fr}.actions button{font-size:13px;padding:11px 8px}}
+@media print{header,.tabs,.no-print{display:none!important}body{background:white}main{padding:0}.panel{display:none!important}#history.panel{display:block!important}.card{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><h1>متابعة قراءات العدادات</h1><p>تطبيق مستقل على هاتفك — احفظ القراءات وراجع الاستهلاك وصدّر التقارير</p></header>
+<main>
+<nav class="tabs no-print">
+<button class="tab active" data-tab="entry">تسجيل قراءة</button><button class="tab" data-tab="history">السجل والتقارير</button><button class="tab" data-tab="settings">الإعدادات</button>
+</nav>
+<section id="entry" class="panel active">
+<div class="card">
+<h2>بيانات القراءة</h2>
+<div class="field"><label for="readingDate">تاريخ القراءة</label><input id="readingDate" type="date"></div>
+<div class="muted">اختر صورة كل عداد من واتساب أو المعرض. سيحاول التطبيق قراءة الأرقام، ويجب مراجعتها قبل الحفظ.</div>
+<div id="meters"></div>
+<div class="actions"><button id="saveBtn" class="wide success">حفظ القراءات على الهاتف</button></div>
+<div id="entryMsg" class="muted" aria-live="polite"></div>
+</div>
+<div class="notice">القراءة الآلية اقتراح وليست مضمونة. راجع الرقم الظاهر على العداد بنفسك قبل الحفظ، خصوصًا العلامة العشرية.</div>
+</section>
+<section id="history" class="panel">
+<div class="card">
+<h2>السجل</h2>
+<div class="grid">
+<div class="field"><label>من تاريخ</label><input id="fromDate" type="date"></div>
+<div class="field"><label>إلى تاريخ</label><input id="toDate" type="date"></div>
+</div>
+<div class="actions no-print"><button id="filterBtn" class="secondary">تطبيق الفترة</button><button id="allBtn" class="secondary">كل السجل</button></div>
+<div id="historyList"></div>
+</div>
+<div class="card no-print">
+<h2>تصدير ومشاركة</h2>
+<div class="actions"><button id="csvBtn">تنزيل CSV لبرنامج Excel</button><button id="pdfBtn" class="secondary">طباعة / حفظ PDF</button></div>
+<div class="actions" style="margin-top:8px"><button id="shareBtn" class="success">مشاركة ملخص واتساب</button><button id="backupBtn" class="secondary">نسخة احتياطية JSON</button></div>
+<div class="field" style="margin-top:12px"><label>استعادة نسخة احتياطية</label><input type="file" id="restoreFile" accept=".json,application/json"></div>
+</div>
+</section>
+<section id="settings" class="panel">
+<div class="card">
+<h2>إعدادات العدادات</h2>
+<p class="muted">الأسماء الافتراضية من نظام المتابعة السابق. يمكنك تعديلها.</p>
+<div id="meterSettings"></div><button id="saveSettings" class="wide">حفظ أسماء العدادات</button>
+</div>
+<div class="card">
+<h2>بياناتك وخصوصيتك</h2>
+<p class="muted">القراءات والصور تحفظ داخل مساحة التطبيق على هذا الهاتف. لا تُرسل تلقائيًا إلى أي خادم. احفظ نسخة احتياطية دوريًا، ولا تمسح بيانات المتصفح قبل تصديرها.</p>
+<button id="clearData" class="danger wide">مسح جميع القراءات من هذا الهاتف</button>
+</div>
+<div class="card">
+<h2>تثبيت التطبيق</h2><p class="muted">من قائمة Chrome ⋮ اختر «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».</p><button id="installBtn" class="secondary wide hidden">تثبيت التطبيق</button>
+</div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+const DB_NAME='meter-mobile-pwa', STORE='records', SETTINGS='settings';
+const defaults=[{id:'tor',name:'الطور'},{id:'sharm',name:'شرم'},{id:'nuweiba',name:'نويبع'},{id:'rassedr',name:'رأس سدر'}];
+let db, records=[], settings={meters:defaults}, currentCandidates={}, installPrompt=null, filterRange=null;
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toLocaleDateString('en-CA');
+function openDB(){return new Promise((resolve,reject)=>{let r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{let d=r.result;if(!d.objectStoreNames.contains(STORE))d.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});if(!d.objectStoreNames.contains(SETTINGS))d.createObjectStore(SETTINGS,{keyPath:'key'});};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
+function tx(store,mode='readonly'){return db.transaction(store,mode).objectStore(store)}
+function req(r){return new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+async function load(){records=await req(tx(STORE).getAll());records.sort((a,b)=>a.date.localeCompare(b.date));let s=await req(tx(SETTINGS).get('main'));if(s)settings=s.value;renderHistory();}
+function arNum(s){return String(s||'').replace(/[٠-٩۰-۹]/g,c=>'٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹'.indexOf(c)%10).replace(/[٫٬]/g,'.').replace(/,/g,'');}
+function fmt(n){return Number(n).toLocaleString('en-US',{maximumFractionDigits:2});}
+function previousValue(key,date){let a=records.filter(r=>r.date<date&&r.values[key]!=null);return a.length?Number(a[a.length-1].values[key]):null;}
+function renderMeters(){ $('meters').innerHTML='';settings.meters.forEach(m=>{let d=document.createElement('div');d.className='meter';d.innerHTML=`<div class="meter-top"><strong>${m.name}</strong><span class="pill" id="status-${m.id}">بانتظار الصورة</span></div><input type="file" accept="image/*" capture="environment" id="file-${m.id}"><img class="preview hidden" id="img-${m.id}"><input inputmode="decimal" placeholder="اكتب القراءة أو راجع القراءة المقترحة" id="value-${m.id}"><div class="muted" id="hint-${m.id}"></div><div class="actions"><button class="secondary" id="ocr-${m.id}" type="button">قراءة الأرقام من الصورة</button><button class="secondary" id="clear-${m.id}" type="button">مسح</button></div>`;$('meters').appendChild(d);
+$('file-'+m.id).addEventListener('change',e=>{let f=e.target.files[0];if(!f)return;let img=$('img-'+m.id);img.src=URL.createObjectURL(f);img.classList.remove('hidden');$('status-'+m.id).textContent='تم اختيار الصورة';$('status-'+m.id).className='pill';});
+$('ocr-'+m.id).onclick=()=>runOCR(m.id,m.name);$('clear-'+m.id).onclick=()=>{$('file-'+m.id).value='';$('value-'+m.id).value='';$('img-'+m.id).classList.add('hidden');$('status-'+m.id).textContent='بانتظار الصورة';$('hint-'+m.id).textContent='';};
+});}
+async function runOCR(id,name){let f=$('file-'+id).files[0];if(!f){alert('اختار صورة العداد أولاً');return;}let st=$('status-'+id),hint=$('hint-'+id);if(!window.Tesseract){hint.textContent='مكتبة القراءة غير متاحة. أدخل الرقم يدويًا.';return;}st.textContent='جاري قراءة الصورة…';try{let worker=await Tesseract.createWorker('eng');let {data}=await worker.recognize(f);await worker.terminate();let raw=arNum(data.text),nums=(raw.match(/\d+(?:\.\d+)?/g)||[]).filter(x=>x.replace(/\D/g,'').length>=3);if(nums.length){$('value-'+id).value=nums.sort((a,b)=>b.length-a.length)[0];hint.textContent='اقتراح OCR: '+nums.join(' ، ')+' — تأكد من الرقم على الصورة.';st.textContent='تمت القراءة — راجعها';}else{hint.textContent='لم يتم العثور على رقم واضح. أدخل القراءة يدويًا.';st.textContent='إدخال يدوي مطلوب';}}catch(e){hint.textContent='تعذرت القراءة الآلية؛ أدخل الرقم يدويًا.';st.textContent='إدخال يدوي مطلوب';}}
+function dateValid(d){return /^\d{4}-\d{2}-\d{2}$/.test(d)&&!isNaN(new Date(d+'T12:00:00').getTime());}
+async function save(){let date=$('readingDate').value;if(!dateValid(date)){alert('حدد تاريخًا صحيحًا');return;}let values={},warnings=[];for(let m of settings.meters){let raw=arNum($('value-'+m.id).value).trim();if(!raw){alert('أدخل قراءة '+m.name);return;}let v=Number(raw);if(!Number.isFinite(v)||v<0){alert('قراءة غير صحيحة لعداد '+m.name);return;}values[m.id]=v;let prev=previousValue(m.id,date);if(prev!==null&&v<prev)warnings.push(m.name+': القراءة أقل من السابقة ('+fmt(prev)+')');}
+if(warnings.length&&!confirm('تنبيه:\n'+warnings.join('\n')+'\nهل تريد الحفظ رغم ذلك؟'))return;
+let existing=records.find(r=>r.date===date);let row={date,values,updatedAt:new Date().toISOString()};if(existing){row.id=existing.id;await req(tx(STORE,'readwrite').put(row));}else await req(tx(STORE,'readwrite').add(row));
+$('entryMsg').textContent='تم حفظ القراءات على الهاتف.';settings.meters.forEach(m=>{$('value-'+m.id).value='';$('file-'+m.id).value='';$('img-'+m.id).classList.add('hidden');$('status-'+m.id).textContent='بانتظار الصورة';$('hint-'+m.id).textContent='';});await load();}
+function renderHistory(){let arr=records;if(filterRange){arr=arr.filter(r=>(!filterRange.from||r.date>=filterRange.from)&&(!filterRange.to||r.date<=filterRange.to));}let el=$('historyList');if(!arr.length){el.innerHTML='<div class="empty">لا توجد قراءات في الفترة المحددة.</div>';return;}el.innerHTML='';[...arr].reverse().forEach(r=>{let card=document.createElement('div');card.className='meter';let html=`<div class="meter-top"><strong>${r.date}</strong><span class="pill">قراءة محفوظة</span></div>`;settings.meters.forEach(m=>{let v=r.values[m.id];let prev=previousInArray(arr,m.id,r.date);let cons=(v!=null&&prev!=null)?Number(v)-prev:null;html+=`<div class="reading"><span>${m.name}</span><strong>${v==null?'—':fmt(v)}</strong></div><div class="muted">الاستهلاك من القراءة السابقة: ${cons==null?'غير متاح':fmt(cons)}</div>`;});html+=`<button class="danger no-print" data-del="${r.id}" style="margin-top:10px">حذف هذا اليوم</button>`;card.innerHTML=html;el.appendChild(card);});el.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{if(confirm('حذف قراءات هذا اليوم؟')){await req(tx(STORE,'readwrite').delete(Number(b.dataset.del)));await load();}});}
+function previousInArray(arr,key,date){let a=arr.filter(r=>r.date<date&&r.values[key]!=null);return a.length?Number(a[a.length-1].values[key]):null;}
+function csv(){let arr=getFiltered();let head=['التاريخ',...settings.meters.flatMap(m=>[m.name+' - القراءة',m.name+' - الاستهلاك'])];let rows=[head];arr.forEach(r=>{let row=[r.date];settings.meters.forEach(m=>{let p=previousInArray(records,m.id,r.date),v=r.values[m.id];row.push(v??'',p===null||v==null?'':Number(v)-p);});rows.push(row);});let content='\ufeff'+rows.map(r=>r.map(x=>'"'+String(x??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');download(new Blob([content],{type:'text/csv;charset=utf-8'}),'تقرير_العدادات.csv');}
+function getFiltered(){return records.filter(r=>(!filterRange||(!filterRange.from||r.date>=filterRange.from)&&(!filterRange.to||r.date<=filterRange.to)));}
+function download(blob,name){let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1500);}
+function reportHTML(){let arr=getFiltered();let html=`<html lang="ar" dir="rtl"><meta charset="utf-8"><title>تقرير قراءات العدادات</title><style>body{font-family:Arial,sans-serif;padding:25px}h2{text-align:center}table{border-collapse:collapse;width:100%;margin-top:20px}td,th{border:1px solid #888;padding:8px;text-align:center}th{background:#eee}</style><h2>تقرير قراءات العدادات</h2><p>تاريخ التقرير: ${today()}</p><table><tr><th>التاريخ</th>${settings.meters.map(m=>`<th>${m.name} - القراءة</th><th>الاستهلاك</th>`).join('')}</tr>${arr.map(r=>`<tr><td>${r.date}</td>${settings.meters.map(m=>{let v=r.values[m.id],p=previousInArray(records,m.id,r.date);return `<td>${v??'—'}</td><td>${v==null||p==null?'—':v-p}</td>`}).join('')}</tr>`).join('')}</table><p>تم إنشاء التقرير من تطبيق متابعة قراءات العدادات.</p></html>`;return html;}
+function pdf(){let w=window.open('','_blank');if(!w){alert('اسمح بفتح النوافذ المنبثقة لهذا التطبيق');return;}w.document.write(reportHTML());w.document.close();w.focus();setTimeout(()=>w.print(),400);}
+function share(){let arr=getFiltered();if(!arr.length){alert('لا توجد بيانات للمشاركة');return;}let r=arr[arr.length-1],lines=['ملخص قراءات العدادات - '+r.date];settings.meters.forEach(m=>{let v=r.values[m.id],p=previousInArray(records,m.id,r.date);lines.push(m.name+': '+(v??'—')+' | الاستهلاك: '+(v==null||p==null?'—':v-p));});let text=lines.join('\n');if(navigator.share)navigator.share({title:'قراءات العدادات',text}).catch(()=>{});else location.href='https://wa.me/?text='+encodeURIComponent(text);}
+function backup(){download(new Blob([JSON.stringify({version:1,settings,records},null,2)],{type:'application/json'}),'نسخة_احتياطية_العدادات.json');}
+async function restore(file){try{let d=JSON.parse(await file.text());if(!Array.isArray(d.records)||!d.settings)throw 0;if(!confirm('استعادة النسخة ستضيف بياناتها إلى السجل الحالي. متابعة؟'))return;settings=d.settings;await req(tx(SETTINGS,'readwrite').put({key:'main',value:settings}));for(let r of d.records){let old=records.find(x=>x.date===r.date);if(old)r.id=old.id;await req(tx(STORE,'readwrite').put(r));}await load();renderMeters();renderSettings();alert('تمت الاستعادة');}catch(e){alert('ملف النسخة الاحتياطية غير صالح');}}
+function renderSettings(){$('meterSettings').innerHTML='';settings.meters.forEach(m=>{let d=document.createElement('div');d.className='field';d.innerHTML=`<label>${m.id}</label><input data-name="${m.id}" value="${m.name.replace(/"/g,'&quot;')}">`;$('meterSettings').appendChild(d);});}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===b.dataset.tab));if(b.dataset.tab==='history')renderHistory();});
+$('saveBtn').onclick=save;$('csvBtn').onclick=csv;$('pdfBtn').onclick=pdf;$('shareBtn').onclick=share;$('backupBtn').onclick=backup;
+$('filterBtn').onclick=()=>{filterRange={from:$('fromDate').value,to:$('toDate').value};renderHistory();};$('allBtn').onclick=()=>{filterRange=null;$('fromDate').value='';$('toDate').value='';renderHistory();};
+$('restoreFile').onchange=e=>{if(e.target.files[0])restore(e.target.files[0]);e.target.value='';};
+$('saveSettings').onclick=async()=>{document.querySelectorAll('[data-name]').forEach(i=>{let m=settings.meters.find(x=>x.id===i.dataset.name);if(m&&i.value.trim())m.name=i.value.trim();});await req(tx(SETTINGS,'readwrite').put({key:'main',value:settings}));renderMeters();renderSettings();renderHistory();alert('تم حفظ الإعدادات');};
+$('clearData').onclick=async()=>{if(confirm('هل أنت متأكد؟ سيتم حذف كل القراءات نهائيًا من هذا الهاتف.')){await req(tx(STORE,'readwrite').clear());await load();alert('تم مسح القراءات');}};
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('installBtn').classList.remove('hidden');});
+$('installBtn').onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('installBtn').classList.add('hidden');}};
+(async()=>{db=await openDB();$('readingDate').value=today();await load();renderMeters();renderSettings();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});})();
+</script>
+</body></html>
